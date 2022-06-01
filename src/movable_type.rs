@@ -23,15 +23,22 @@ pub struct MetaData {
 }
 
 pub fn parse(_text: &str) -> Vec<Post> {
-    vec![Post {}]
+    vec![]
+}
+
+fn author(input: &str) -> IResult<&str, &str> {
+    preceded(tag("AUTHOR: "), recognize(many1(anychar)))(input)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
 
     #[test]
-    fn parse_empty_str() {
-        assert_eq!(parse(""), vec![Post {}]);
+    fn parse_author() -> Result<()> {
+        let name = author("AUTHOR: wat-aro")?;
+        assert_eq!(name, ("", "wat-aro"));
+        Ok(())
     }
 }
