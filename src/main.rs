@@ -1,6 +1,8 @@
+use anyhow::{Context, Result};
 use clap::{Arg, Command};
+use movable_type_to_markdown::movable_type;
 
-fn main() {
+fn main() -> Result<()> {
     let command = Command::new("Movable type to markdown")
         .author("wat-aro")
         .version("0.1.0")
@@ -17,6 +19,13 @@ fn main() {
         )
         .get_matches();
 
-    println!("FILE: {:?}", command.value_of("FILE"));
+    let posts = movable_type::parse(
+        command
+            .value_of("FILE")
+            .context("No such file or directory")?,
+    );
+
+    println!("POST: {:?}", posts);
     println!("DIRECTORY: {:?}", command.value_of("DIRECTORY"));
+    Ok(())
 }
