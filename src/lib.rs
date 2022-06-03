@@ -1,1 +1,1 @@
-mod movable_type;
+pub mod movable_type;
