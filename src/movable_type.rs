@@ -1,16 +1,22 @@
+mod body;
 mod metadata;
 
 use metadata::Metadata;
 
-use self::metadata::metadata;
+use self::{
+    body::{body, Body},
+    metadata::metadata,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct Post<'a> {
     metadata: Metadata<'a>,
+    body: Body,
 }
 
 pub fn parse(input: &str) -> Vec<Post> {
-    let (_, metadata) = metadata(input).unwrap();
-    let post = Post { metadata };
+    let (input, metadata) = metadata(input).unwrap();
+    let (_, body) = body(input).unwrap();
+    let post = Post { metadata, body };
     vec![post]
 }
