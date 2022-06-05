@@ -1,5 +1,6 @@
 mod body;
 mod metadata;
+mod utils;
 
 use metadata::Metadata;
 
