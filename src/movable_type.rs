@@ -1,3 +1,4 @@
+mod author;
 mod body;
 mod metadata;
 mod utils;

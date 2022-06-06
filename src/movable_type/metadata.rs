@@ -2,6 +2,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use nom::combinator::map;
 use nom::IResult;
 
+use super::author::author;
 use super::utils::key_value;
 
 #[derive(Debug, PartialEq)]
@@ -39,10 +40,6 @@ pub fn metadata(input: &str) -> IResult<&str, Metadata> {
             image,
         },
     ))
-}
-
-fn author(input: &str) -> IResult<&str, &str> {
-    key_value("AUTHOR")(input)
 }
 
 fn title(input: &str) -> IResult<&str, &str> {
@@ -85,13 +82,6 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use chrono::{TimeZone, Utc};
-
-    #[test]
-    fn parse_author() -> Result<()> {
-        let name = author("AUTHOR: wat-aro\n")?;
-        assert_eq!(name, ("", "wat-aro"));
-        Ok(())
-    }
 
     #[test]
     fn parse_title() -> Result<()> {
