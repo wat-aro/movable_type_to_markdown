@@ -3,7 +3,7 @@ use nom::combinator::map;
 use nom::IResult;
 
 use super::author::author;
-use super::utils::key_value;
+use super::key_value::key_value;
 
 #[derive(Debug, PartialEq)]
 pub struct Metadata<'a> {

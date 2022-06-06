@@ -1,6 +1,6 @@
 use nom::IResult;
 
-use super::utils::key_value;
+use super::key_value::key_value;
 
 pub fn author(input: &str) -> IResult<&str, &str> {
     key_value("AUTHOR")(input)
