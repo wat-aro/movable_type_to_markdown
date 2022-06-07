@@ -1,9 +1,7 @@
-use chrono::{DateTime, TimeZone, Utc};
+use super::common::{author, date, key_value};
+use chrono::{DateTime, Utc};
 use nom::combinator::map;
 use nom::IResult;
-
-use super::author::author;
-use super::key_value::key_value;
 
 #[derive(Debug, PartialEq)]
 pub struct Metadata<'a> {
@@ -66,13 +64,6 @@ fn convert_breaks(input: &str) -> IResult<&str, bool> {
     })(input)
 }
 
-fn date(input: &str) -> IResult<&str, DateTime<Utc>> {
-    map(key_value("DATE"), |str| {
-        Utc.datetime_from_str(str, "%m/%d/%Y %H:%M:%S").unwrap()
-        // str.parse::<DateTime<Utc>>().unwrap()
-    })(input)
-}
-
 fn image(input: &str) -> IResult<&str, &str> {
     key_value("IMAGE")(input)
 }
@@ -129,13 +120,6 @@ mod tests {
     fn parse_convert_breaks_false() -> Result<()> {
         let convert_breaks = convert_breaks("CONVERT BREAKS: 0\n")?;
         assert_eq!(convert_breaks, ("", false));
-        Ok(())
-    }
-
-    #[test]
-    fn parse_date_time() -> Result<()> {
-        let date = date("DATE: 09/16/2021 22:09:33\n")?;
-        assert_eq!(date, ("", Utc.ymd(2021, 9, 16).and_hms(22, 9, 33)));
         Ok(())
     }
 

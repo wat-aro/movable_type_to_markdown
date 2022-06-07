@@ -1,6 +1,5 @@
-mod author;
 mod body;
-mod key_value;
+mod common;
 mod metadata;
 
 use metadata::Metadata;
