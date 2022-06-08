@@ -1,3 +1,5 @@
+use std::fs;
+
 use anyhow::{Context, Result};
 use clap::{Arg, Command};
 use movable_type_to_markdown::movable_type;
@@ -19,13 +21,17 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    let posts = movable_type::parse(
-        command
-            .value_of("FILE")
-            .context("No such file or directory")?,
-    )?;
+    let filename = command
+        .value_of("FILE")
+        .context("No such file or directory")?;
+    let contents = fs::read_to_string(filename)?;
+    let posts = movable_type::parse(&contents)?;
 
-    println!("POST: {:?}", posts);
+    posts.iter().for_each(|post| {
+        println!("TITLE: {}", post.metadata.title);
+        // println!("BODY: {:?}", post.body.0);
+    });
+    println!("COUNT: {}", posts.len());
     println!("DIRECTORY: {:?}", command.value_of("DIRECTORY"));
     Ok(())
 }

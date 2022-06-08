@@ -8,7 +8,7 @@ use nom::{
 };
 
 #[derive(Debug, PartialEq)]
-pub struct Body(Dom);
+pub struct Body(pub Dom);
 
 pub fn body<'a>(input: &str) -> IResult<&str, Body> {
     let (input, _) = pair(tag("-----"), newline)(input)?;

@@ -1,18 +1,20 @@
 use super::common::{author, date, key_value};
 use chrono::{DateTime, Utc};
 use nom::combinator::{map, opt};
+use nom::multi::many0;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Metadata<'a> {
     author: &'a str,
-    title: &'a str,
+    pub title: &'a str,
     basename: &'a str,
     status: &'a str,
     allow_comments: bool,
     convert_breaks: bool,
     date: DateTime<Utc>,
     image: Option<&'a str>,
+    category: Vec<&'a str>,
 }
 
 pub fn metadata(input: &str) -> IResult<&str, Metadata> {
@@ -23,6 +25,7 @@ pub fn metadata(input: &str) -> IResult<&str, Metadata> {
     let (input, allow_comments) = allow_comments(input)?;
     let (input, convert_breaks) = convert_breaks(input)?;
     let (input, date) = date(input)?;
+    let (input, category) = category(input)?;
     let (input, image) = image(input)?;
 
     Ok((
@@ -35,6 +38,7 @@ pub fn metadata(input: &str) -> IResult<&str, Metadata> {
             allow_comments,
             convert_breaks,
             date,
+            category,
             image,
         },
     ))
@@ -62,6 +66,10 @@ fn convert_breaks(input: &str) -> IResult<&str, bool> {
     map(key_value("CONVERT BREAKS"), |str| {
         str.parse::<u8>().unwrap() != 0
     })(input)
+}
+
+fn category(input: &str) -> IResult<&str, Vec<&str>> {
+    many0(key_value("CATEGORY"))(input)
 }
 
 fn image(input: &str) -> IResult<&str, Option<&str>> {
@@ -155,6 +163,7 @@ IMAGE: http://example.com/image.jpg
                     allow_comments: true,
                     convert_breaks: false,
                     date: Utc.ymd(2021, 9, 16).and_hms(22, 9, 33),
+                    category: vec![],
                     image: Some("http://example.com/image.jpg")
                 }
             )

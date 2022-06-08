@@ -15,16 +15,21 @@ use self::{
 
 #[derive(Debug, PartialEq)]
 pub struct Post<'a> {
-    metadata: Metadata<'a>,
-    body: Body,
-    comments: Vec<Comment<'a>>,
+    pub metadata: Metadata<'a>,
+    pub body: Body,
+    pub comments: Vec<Comment<'a>>,
 }
 
 pub fn parse(input: &str) -> Result<Vec<Post>> {
     let result = posts(input);
 
     match result {
-        Ok((_, posts)) => Ok(posts),
+        Ok((input, posts)) => {
+            if input != "" {
+                println!("INPUT: {}", input);
+            }
+            Ok(posts)
+        }
         Err(e) => {
             eprintln!("{}", e);
             Err(anyhow::anyhow!("Failed parsing."))
