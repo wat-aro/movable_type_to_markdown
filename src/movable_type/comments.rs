@@ -4,7 +4,7 @@ use nom::{
     bytes::{complete::take_until, streaming::tag},
     character::complete::{newline, u8},
     combinator::map,
-    multi::many0,
+    multi::separated_list0,
     sequence::{pair, tuple},
     IResult,
 };
@@ -23,13 +23,13 @@ pub struct Comment<'a> {
 struct IP(u8, u8, u8, u8);
 
 pub fn comments(input: &str) -> IResult<&str, Vec<Comment>> {
-    let (input, comments) = many0(comment)(input)?;
+    let (input, _) = pair(tag("-----"), newline)(input)?;
+    let (input, comments) = separated_list0(pair(tag("-----"), newline), comment)(input)?;
     let (input, _) = pair(tag("--------"), newline)(input)?;
     Ok((input, comments))
 }
 
 fn comment(input: &str) -> IResult<&str, Comment> {
-    let (input, _) = pair(tag("-----"), newline)(input)?;
     let (input, _) = tuple((tag("COMMENT"), tag(":"), newline))(input)?;
     let (input, author) = author(input)?;
     let (input, ip) = ip(input)?;
@@ -66,6 +66,17 @@ mod tests {
     use chrono::TimeZone;
 
     use super::*;
+
+    #[test]
+    fn parse_empty_comments() -> Result<()> {
+        let comments = comments(
+            r#"-----
+--------
+"#,
+        )?;
+        assert_eq!(comments, ("", vec![]));
+        Ok(())
+    }
 
     #[test]
     fn parse_comments() -> Result<()> {
@@ -116,8 +127,7 @@ DATE: 09/20/2021 22:10:00
     #[test]
     fn parse_comment() -> Result<()> {
         let comment = comment(
-            r#"-----
-COMMENT:
+            r#"COMMENT:
 AUTHOR: wat-aro
 IP: 127.0.0.1
 DATE: 09/16/2021 22:09:33

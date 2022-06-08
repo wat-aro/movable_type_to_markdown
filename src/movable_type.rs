@@ -37,9 +37,9 @@ fn posts(input: &str) -> IResult<&str, Vec<Post>> {
 }
 
 fn post(input: &str) -> IResult<&str, Post> {
-    let (input, metadata) = metadata(input).unwrap();
-    let (input, body) = body(input).unwrap();
-    let (input, comments) = comments(input).unwrap();
+    let (input, metadata) = metadata(input)?;
+    let (input, body) = body(input)?;
+    let (input, comments) = comments(input)?;
     let post = Post {
         metadata,
         body,

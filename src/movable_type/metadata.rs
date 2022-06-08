@@ -1,6 +1,6 @@
 use super::common::{author, date, key_value};
 use chrono::{DateTime, Utc};
-use nom::combinator::map;
+use nom::combinator::{map, opt};
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
@@ -12,7 +12,7 @@ pub struct Metadata<'a> {
     allow_comments: bool,
     convert_breaks: bool,
     date: DateTime<Utc>,
-    image: &'a str,
+    image: Option<&'a str>,
 }
 
 pub fn metadata(input: &str) -> IResult<&str, Metadata> {
@@ -64,8 +64,8 @@ fn convert_breaks(input: &str) -> IResult<&str, bool> {
     })(input)
 }
 
-fn image(input: &str) -> IResult<&str, &str> {
-    key_value("IMAGE")(input)
+fn image(input: &str) -> IResult<&str, Option<&str>> {
+    opt(key_value("IMAGE"))(input)
 }
 
 #[cfg(test)]
@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn parse_image() -> Result<()> {
         let image = image("IMAGE: http://example.com/image.jpg\n")?;
-        assert_eq!(image, ("", "http://example.com/image.jpg"));
+        assert_eq!(image, ("", Some("http://example.com/image.jpg")));
         Ok(())
     }
 
@@ -155,7 +155,7 @@ IMAGE: http://example.com/image.jpg
                     allow_comments: true,
                     convert_breaks: false,
                     date: Utc.ymd(2021, 9, 16).and_hms(22, 9, 33),
-                    image: "http://example.com/image.jpg"
+                    image: Some("http://example.com/image.jpg")
                 }
             )
         );
