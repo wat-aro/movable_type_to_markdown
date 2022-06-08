@@ -23,7 +23,7 @@ fn main() -> Result<()> {
         command
             .value_of("FILE")
             .context("No such file or directory")?,
-    );
+    )?;
 
     println!("POST: {:?}", posts);
     println!("DIRECTORY: {:?}", command.value_of("DIRECTORY"));
