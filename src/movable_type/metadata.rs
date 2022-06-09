@@ -6,15 +6,15 @@ use nom::IResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Metadata<'a> {
-    author: &'a str,
+    pub author: &'a str,
     pub title: &'a str,
-    basename: &'a str,
-    status: &'a str,
-    allow_comments: bool,
-    convert_breaks: bool,
-    date: DateTime<Utc>,
-    image: Option<&'a str>,
-    category: Vec<&'a str>,
+    pub basename: &'a str,
+    pub status: &'a str,
+    pub allow_comments: bool,
+    pub convert_breaks: bool,
+    pub date: DateTime<Utc>,
+    pub image: Option<&'a str>,
+    pub category: Vec<&'a str>,
 }
 
 pub fn metadata(input: &str) -> IResult<&str, Metadata> {

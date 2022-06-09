@@ -1,10 +1,9 @@
 use chrono::{DateTime, Utc};
 use nom::{
-    branch::alt,
     bytes::{complete::take_until, streaming::tag},
     character::complete::{newline, u8},
     combinator::map,
-    multi::separated_list0,
+    multi::many0,
     sequence::{pair, tuple},
     IResult,
 };
@@ -13,18 +12,24 @@ use super::common::{author, date};
 
 #[derive(Debug, PartialEq)]
 pub struct Comment<'a> {
-    author: &'a str,
-    ip: IP,
-    date: DateTime<Utc>,
-    body: &'a str,
+    pub author: &'a str,
+    pub ip: IP,
+    pub date: DateTime<Utc>,
+    pub body: &'a str,
 }
 
 #[derive(Debug, PartialEq)]
-struct IP(u8, u8, u8, u8);
+pub struct IP(u8, u8, u8, u8);
+
+impl IP {
+    pub fn new(i: u8, j: u8, k: u8, l: u8) -> Self {
+        IP(i, j, k, l)
+    }
+}
 
 pub fn comments(input: &str) -> IResult<&str, Vec<Comment>> {
     let (input, _) = pair(tag("-----"), newline)(input)?;
-    let (input, comments) = separated_list0(pair(tag("-----"), newline), comment)(input)?;
+    let (input, comments) = many0(comment)(input)?;
     let (input, _) = pair(tag("--------"), newline)(input)?;
     Ok((input, comments))
 }
@@ -35,6 +40,7 @@ fn comment(input: &str) -> IResult<&str, Comment> {
     let (input, ip) = ip(input)?;
     let (input, date) = date(input)?;
     let (input, body) = body(input)?;
+    let (input, _) = pair(tag("-----"), newline)(input)?;
     Ok((
         input,
         Comment {
@@ -50,14 +56,14 @@ fn ip(input: &str) -> IResult<&str, IP> {
     let (input, _) = tag("IP: ")(input)?;
     let (input, ip) = map(
         tuple((u8, tag("."), u8, tag("."), u8, tag("."), u8)),
-        |(i, _, j, _, k, _, l)| IP(i, j, k, l),
+        |(i, _, j, _, k, _, l)| IP::new(i, j, k, l),
     )(input)?;
     let (input, _) = newline(input)?;
     Ok((input, ip))
 }
 
 fn body(input: &str) -> IResult<&str, &str> {
-    alt((take_until("-----"), take_until("--------")))(input)
+    take_until("-----")(input)
 }
 
 #[cfg(test)]
@@ -97,6 +103,7 @@ DATE: 09/20/2021 22:10:00
 これは
 コメント2
 です
+-----
 --------
 "#,
         )?;
@@ -134,13 +141,13 @@ DATE: 09/16/2021 22:09:33
 これは
 コメント
 です
---------
+-----
 "#,
         )?;
         assert_eq!(
             comment,
             (
-                "--------\n",
+                "",
                 Comment {
                     author: "wat-aro",
                     ip: IP(127, 0, 0, 1),
