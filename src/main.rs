@@ -1,11 +1,31 @@
 use std::fs;
 
 use anyhow::{Context, Result};
-use clap::{Arg, Command};
+use clap::{Arg, ArgMatches, Command};
 use movable_type_to_markdown::movable_type;
 
 fn main() -> Result<()> {
-    let command = Command::new("Movable type to markdown")
+    let command = build_command();
+
+    let filename = command
+        .value_of("FILE")
+        .context("No such file or directory")?;
+    let output_directory = command
+        .value_of("DIRECTORY")
+        .context("Required directory")?;
+    let contents = fs::read_to_string(filename)?;
+    let posts = movable_type::parse(&contents)?;
+
+    posts.iter().for_each(|post| {
+        println!("TITLE: {}", post.metadata.title);
+    });
+    println!("COUNT: {}", posts.len());
+    println!("DIRECTORY: {:?}", output_directory);
+    Ok(())
+}
+
+fn build_command() -> ArgMatches {
+    Command::new("Movable type to markdown")
         .author("wat-aro")
         .version("0.1.0")
         .about("Convert to markdown from movable type")
@@ -19,19 +39,5 @@ fn main() -> Result<()> {
                 .required(true)
                 .help("Output directory"),
         )
-        .get_matches();
-
-    let filename = command
-        .value_of("FILE")
-        .context("No such file or directory")?;
-    let contents = fs::read_to_string(filename)?;
-    let posts = movable_type::parse(&contents)?;
-
-    posts.iter().for_each(|post| {
-        println!("TITLE: {}", post.metadata.title);
-        // println!("BODY: {:?}", post.body.0);
-    });
-    println!("COUNT: {}", posts.len());
-    println!("DIRECTORY: {:?}", command.value_of("DIRECTORY"));
-    Ok(())
+        .get_matches()
 }
