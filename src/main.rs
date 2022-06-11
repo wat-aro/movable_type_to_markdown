@@ -2,7 +2,7 @@ use std::fs;
 
 use anyhow::{Context, Result};
 use clap::{Arg, ArgMatches, Command};
-use movable_type_to_markdown::movable_type;
+use movable_type_to_markdown::{markdown::Markdown, movable_type};
 
 fn main() -> Result<()> {
     let command = build_command();
@@ -16,11 +16,9 @@ fn main() -> Result<()> {
     let contents = fs::read_to_string(filename)?;
     let posts = movable_type::parse(&contents)?;
 
-    posts.iter().for_each(|post| {
-        println!("TITLE: {}", post.metadata.title);
+    posts.into_iter().for_each(|post| {
+        println!("{}", Markdown::from(post).dump());
     });
-    println!("COUNT: {}", posts.len());
-    println!("DIRECTORY: {:?}", output_directory);
     Ok(())
 }
 
