@@ -1,20 +1,19 @@
-use html_parser::Dom;
 use nom::{
     bytes::complete::{tag, take_until},
     character::complete::newline,
-    combinator::map_res,
+    combinator::map,
     sequence::{pair, preceded},
     IResult,
 };
 
 #[derive(Debug, PartialEq)]
-pub struct Body(pub Dom);
+pub struct Body<'a>(pub &'a str);
 
 pub fn body<'a>(input: &str) -> IResult<&str, Body> {
     let (input, _) = pair(tag("-----"), newline)(input)?;
-    let (input, body) = map_res(
+    let (input, body) = map(
         preceded(pair(tag("BODY:"), newline), take_until("\n-----\n")),
-        |str| Dom::parse(str).map(|dom| Body(dom)),
+        |str| Body(str),
     )(input)?;
     let (input, _) = newline(input)?;
     Ok((input, body))

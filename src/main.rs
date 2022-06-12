@@ -1,4 +1,7 @@
-use std::fs;
+use std::{
+    fs::{self, File},
+    io::Write,
+};
 
 use anyhow::{Context, Result};
 use clap::{Arg, ArgMatches, Command};
@@ -17,7 +20,10 @@ fn main() -> Result<()> {
     let posts = movable_type::parse(&contents)?;
 
     posts.into_iter().for_each(|post| {
-        println!("{}", Markdown::from(post).dump());
+        let markdown = Markdown::from(post);
+        let mut file = File::create(markdown.path(output_directory)).unwrap();
+        let content = markdown.dump();
+        write!(file, "{}", content).unwrap();
     });
     Ok(())
 }

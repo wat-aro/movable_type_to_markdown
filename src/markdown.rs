@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use html_parser::Dom;
 
 use crate::movable_type::Post;
 
@@ -8,7 +7,7 @@ pub struct Markdown<'a> {
     title: &'a str,
     published: DateTime<Utc>,
     tags: Vec<&'a str>,
-    body: Dom,
+    body: &'a str,
 }
 
 impl<'a> From<Post<'a>> for Markdown<'a> {
@@ -31,7 +30,7 @@ impl<'a> Markdown<'a> {
     pub fn dump(&self) -> String {
         let mut string = String::new();
         string.push_str("---\n");
-        string.push_str(&format!("title: {}\n", self.title));
+        string.push_str(&format!("title: \"{}\"\n", self.title));
         string.push_str(&format!(
             "published: {}\n",
             self.published.format("%Y/%m/%d").to_string()
@@ -42,7 +41,12 @@ impl<'a> Markdown<'a> {
                 string.push_str(&format!("  - {}\n", tag));
             })
         }
-        string.push_str("---\n");
+        string.push_str("---\n\n");
+        string.push_str(&format!("{}\n", self.body));
         string
+    }
+
+    pub fn path(&self, directory: &str) -> String {
+        format!("{}/{}.md", directory, self.title)
     }
 }
