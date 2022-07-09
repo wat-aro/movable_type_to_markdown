@@ -15,7 +15,7 @@ impl<'a> From<Post<'a>> for Markdown<'a> {
         let title = post.metadata.title;
         let published = post.metadata.date;
         let tags = post.metadata.category;
-        let body = post.body.0;
+        let body = "";
 
         Markdown {
             title,
