@@ -32,16 +32,29 @@ fn dump_node(node: &Node) -> String {
 fn dump_element(element: &Element) -> String {
     match &element.name[..] {
         "p" => {
-            let children: Vec<String> = element
-                .children
-                .iter()
-                .map(|node| dump_node(node))
-                .collect();
+            let children: Vec<String> = dump_children(&element.children);
             format!("{}\n\n", children.join(""))
         }
         "br" => "  ".to_string(),
+        "a" => {
+            let text = dump_children(&element.children).join("");
+            match element.attributes.get("href") {
+                Some(link) => {
+                    let link = match link {
+                        Some(link) => link,
+                        None => "",
+                    };
+                    format!("[{text}]({link})", text = text, link = link)
+                }
+                None => format!("[{text}]()", text = text),
+            }
+        }
         _ => todo!(),
     }
+}
+
+fn dump_children(children: &Vec<Node>) -> Vec<String> {
+    children.iter().map(|node| dump_node(node)).collect()
 }
 
 pub fn body<'a>(input: &str) -> IResult<&str, Body> {
@@ -127,6 +140,13 @@ BODY:
     fn dump_br() -> Result<()> {
         let body = Body::initialize_from_html("Hello<br/>");
         assert_eq!(body.dump(), "Hello  ");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_a() -> Result<()> {
+        let body = Body::initialize_from_html("<a href=\"http://example.com\">Link</a>");
+        assert_eq!(body.dump(), "[Link](http://example.com)");
         Ok(())
     }
 }
