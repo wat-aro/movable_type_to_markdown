@@ -38,6 +38,9 @@ fn dump_element(element: &Element) -> String {
         "br" => "  ".to_string(),
         "a" => {
             let text = dump_children(&element.children).join("");
+            if element.classes.contains(&String::from("keyword")) {
+                return text;
+            }
             match element.attributes.get("href") {
                 Some(link) => {
                     let link = match link {
@@ -147,6 +150,14 @@ BODY:
     fn dump_a() -> Result<()> {
         let body = Body::initialize_from_html("<a href=\"http://example.com\">Link</a>");
         assert_eq!(body.dump(), "[Link](http://example.com)");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_a_without_keyword() -> Result<()> {
+        let body =
+            Body::initialize_from_html("<a class=\"keyword\" href=\"http://example.com\">Link</a>");
+        assert_eq!(body.dump(), "Link");
         Ok(())
     }
 }
