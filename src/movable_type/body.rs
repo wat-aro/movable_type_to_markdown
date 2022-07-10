@@ -53,7 +53,27 @@ fn dump_element(element: &Element) -> String {
             }
         }
         "span" => dump_children(&element.children).join(""),
-        _ => todo!(),
+        "img" => {
+            let mut attributes_text: Vec<String> = vec![];
+            if let Some(src) = element.attributes.get("src").unwrap_or(&None) {
+                attributes_text.push(format!("src=\"{}\"", src));
+            }
+            if let Some(height) = element.attributes.get("height").unwrap_or(&None) {
+                attributes_text.push(format!("height=\"{}\"", height));
+            }
+            if let Some(width) = element.attributes.get("width").unwrap_or(&None) {
+                attributes_text.push(format!("width=\"{}\"", width));
+            }
+            if let Some(loading) = element.attributes.get("loading").unwrap_or(&None) {
+                attributes_text.push(format!("loading=\"{}\"", loading));
+            }
+
+            format!("<img {}/>", attributes_text.join(" "))
+        }
+        _ => {
+            println!("{:?}", element);
+            todo!()
+        }
     }
 }
 
@@ -166,6 +186,13 @@ BODY:
     fn dump_span() -> Result<()> {
         let body = Body::initialize_from_html("<span>Text</span>");
         assert_eq!(body.dump(), "Text");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_img() -> Result<()> {
+        let body = Body::initialize_from_html("<img src=\"http://example.log/image.png\" height=\"400\" width=\"300\" loading=\"lazy\" />");
+        assert_eq!(body.dump(), "<img src=\"http://example.log/image.png\" height=\"400\" width=\"300\" loading=\"lazy\"/>");
         Ok(())
     }
 }
