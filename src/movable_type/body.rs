@@ -52,6 +52,7 @@ fn dump_element(element: &Element) -> String {
                 None => format!("[{text}]()", text = text),
             }
         }
+        "span" => dump_children(&element.children).join(""),
         _ => todo!(),
     }
 }
@@ -158,6 +159,13 @@ BODY:
         let body =
             Body::initialize_from_html("<a class=\"keyword\" href=\"http://example.com\">Link</a>");
         assert_eq!(body.dump(), "Link");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_span() -> Result<()> {
+        let body = Body::initialize_from_html("<span>Text</span>");
+        assert_eq!(body.dump(), "Text");
         Ok(())
     }
 }
