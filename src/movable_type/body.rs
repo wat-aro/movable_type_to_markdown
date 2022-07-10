@@ -70,6 +70,10 @@ fn dump_element(element: &Element) -> String {
 
             format!("<img {}/>", attributes_text.join(" "))
         }
+        "code" => {
+            let children = dump_children(&element.children);
+            format!("`{}`", children.join(""))
+        }
         _ => {
             println!("{:?}", element);
             todo!()
@@ -193,6 +197,13 @@ BODY:
     fn dump_img() -> Result<()> {
         let body = Body::initialize_from_html("<img src=\"http://example.log/image.png\" height=\"400\" width=\"300\" loading=\"lazy\" />");
         assert_eq!(body.dump(), "<img src=\"http://example.log/image.png\" height=\"400\" width=\"300\" loading=\"lazy\"/>");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_code() -> Result<()> {
+        let body = Body::initialize_from_html("<code>Code</code>");
+        assert_eq!(body.dump(), "`Code`");
         Ok(())
     }
 }
