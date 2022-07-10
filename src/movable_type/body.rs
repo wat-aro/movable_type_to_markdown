@@ -61,6 +61,13 @@ mod tests {
     use super::*;
     use anyhow::Result;
 
+    impl Body {
+        fn initialize_from_html(html: &str) -> Self {
+            let dom = Dom::parse(html).unwrap();
+            Self(dom)
+        }
+    }
+
     #[test]
     fn parse_body() -> Result<()> {
         assert!(body(
@@ -97,32 +104,28 @@ BODY:
 
     #[test]
     fn dump_text() -> Result<()> {
-        let dom = Dom::parse("Hello")?;
-        let body = Body::new(dom);
+        let body = Body::initialize_from_html("Hello");
         assert_eq!(body.dump(), "Hello");
         Ok(())
     }
 
     #[test]
     fn dump_comment() -> Result<()> {
-        let dom = Dom::parse("<!-- comment -->")?;
-        let body = Body::new(dom);
+        let body = Body::initialize_from_html("<!-- comment -->");
         assert_eq!(body.dump(), "");
         Ok(())
     }
 
     #[test]
     fn dump_p() -> Result<()> {
-        let dom = Dom::parse("<p>paragraph</p>")?;
-        let body = Body::new(dom);
+        let body = Body::initialize_from_html("<p>paragraph</p>");
         assert_eq!(body.dump(), "paragraph\n\n");
         Ok(())
     }
 
     #[test]
     fn dump_br() -> Result<()> {
-        let dom = Dom::parse("Hello<br/>")?;
-        let body = Body::new(dom);
+        let body = Body::initialize_from_html("Hello<br/>");
         assert_eq!(body.dump(), "Hello  ");
         Ok(())
     }
