@@ -74,11 +74,35 @@ fn dump_element(element: &Element) -> String {
             let children = dump_children(&element.children);
             format!("`{}`", children.join(""))
         }
+        "pre" => {
+            println!("{:?}", element);
+
+            let code = match element.attributes.get("data-lang").unwrap_or(&None) {
+                Some(code) => code,
+                None => "",
+            };
+            let children: Vec<String> =
+                element.children.iter().map(|node| pre_node(node)).collect();
+            format!("```{}\n{}\n```\n", code, children.join(""))
+        }
         _ => {
             println!("{:?}", element);
             todo!()
         }
     }
+}
+
+fn pre_node(node: &Node) -> String {
+    match node {
+        Node::Text(text) => text.to_string(),
+        Node::Element(element) => pre_element(element),
+        Node::Comment(_) => String::from(""),
+    }
+}
+
+fn pre_element(element: &Element) -> String {
+    let children: Vec<String> = element.children.iter().map(|node| pre_node(node)).collect();
+    children.join("")
 }
 
 fn dump_children(children: &Vec<Node>) -> Vec<String> {
@@ -204,6 +228,84 @@ BODY:
     fn dump_code() -> Result<()> {
         let body = Body::initialize_from_html("<code>Code</code>");
         assert_eq!(body.dump(), "`Code`");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_shell_pre() -> Result<()> {
+        let body = Body::initialize_from_html(
+            r#"<pre class="code shell" data-lang="shell" data-unlink>$ yay -G fcitx-mozc</pre>"#,
+        );
+        assert_eq!(
+            body.dump(),
+            r#"```shell
+$ yay -G fcitx-mozc
+```
+"#
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dump_ruby_pre() -> Result<()> {
+        let body = Body::initialize_from_html(
+            r#"<pre class="code lang-ruby" data-lang="ruby" data-unlink><span class="synPreProc">class</span> <span class="synType">MoneyType</span> &lt; <span class="synType">ActiveModel</span>::<span class="synType">Type</span>::<span class="synType">Integer</span>
+  <span class="synPreProc">def</span> <span class="synIdentifier">cast_value</span>(value)
+    <span class="synStatement">if</span> !value.kind_of?(<span class="synType">Numeric</span>) &amp;&amp; value.include?(<span class="synSpecial">'</span><span class="synConstant">$</span><span class="synSpecial">'</span>)
+      price_in_dollars = value.gsub(<span class="synSpecial">/\$/</span>, <span class="synSpecial">''</span>).to_f
+      <span class="synStatement">super</span>(price_in_dollars * <span class="synConstant">100</span>)
+    <span class="synStatement">else</span>
+      <span class="synStatement">super</span>
+    <span class="synStatement">end</span>
+  <span class="synPreProc">end</span>
+<span class="synPreProc">end</span>
+
+<span class="synComment"># config/initializers/types.rb</span>
+<span class="synType">ActiveModel</span>::<span class="synType">Type</span>.register(<span class="synConstant">:money</span>, <span class="synType">MoneyType</span>)
+
+<span class="synComment"># app/models/store_listing.rb</span>
+<span class="synPreProc">class</span> <span class="synType">StoreListing</span>
+  <span class="synPreProc">include</span> <span class="synType">ActiveModel</span>::<span class="synType">Model</span>
+  <span class="synPreProc">include</span> <span class="synType">ActiveModel</span>::<span class="synType">Attributes</span>
+
+  attribute <span class="synConstant">:price_in_cents</span>, <span class="synConstant">:money</span>
+<span class="synPreProc">end</span>
+
+store_listing = <span class="synType">StoreListing</span>.new(<span class="synConstant">price_in_cents</span>: <span class="synSpecial">'</span><span class="synConstant">$10.00</span><span class="synSpecial">'</span>)
+store_listing.price_in_cents <span class="synComment"># =&gt; 1000</span>
+</pre>
+"#,
+        );
+        assert_eq!(
+            body.dump(),
+            r#"```ruby
+class MoneyType < ActiveModel::Type::Integer
+  def cast_value(value)
+    if !value.kind_of?(Numeric) && value.include?('$')
+      price_in_dollars = value.gsub(/\$/, '').to_f
+      super(price_in_dollars * 100)
+    else
+      super
+    end
+  end
+end
+
+# config/initializers/types.rb
+ActiveModel::Type.register(:money, MoneyType)
+
+# app/models/store_listing.rb
+class StoreListing
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+
+  attribute :price_in_cents, :money
+end
+
+store_listing = StoreListing.new(price_in_cents: '$10.00')
+store_listing.price_in_cents # => 1000
+```
+"#
+        );
         Ok(())
     }
 }
