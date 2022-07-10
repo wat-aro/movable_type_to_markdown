@@ -1,4 +1,4 @@
-use html_parser::{Dom, Node};
+use html_parser::{Dom, Element, Node};
 use nom::{
     bytes::complete::{tag, take_until},
     character::complete::newline,
@@ -16,12 +16,7 @@ impl Body {
     }
 
     pub fn dump(&self) -> String {
-        let children: Vec<String> = self
-            .0
-            .children
-            .iter()
-            .map(|child| dump_node(child))
-            .collect();
+        let children: Vec<String> = self.0.children.iter().map(|node| dump_node(node)).collect();
         children.join("\n")
     }
 }
@@ -29,8 +24,22 @@ impl Body {
 fn dump_node(node: &Node) -> String {
     match node {
         Node::Text(text) => text.to_string(),
-        Node::Element(_) => todo!(),
+        Node::Element(element) => dump_element(element),
         Node::Comment(_) => String::from(""),
+    }
+}
+
+fn dump_element(element: &Element) -> String {
+    match &element.name[..] {
+        "p" => {
+            let children: Vec<String> = element
+                .children
+                .iter()
+                .map(|node| dump_node(node))
+                .collect();
+            format!("{}\n\n", children.join(""))
+        }
+        _ => todo!(),
     }
 }
 
@@ -98,6 +107,14 @@ BODY:
         let dom = Dom::parse("<!-- comment -->")?;
         let body = Body::new(dom);
         assert_eq!(body.dump(), "");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_p() -> Result<()> {
+        let dom = Dom::parse("<p>paragraph</p>")?;
+        let body = Body::new(dom);
+        assert_eq!(body.dump(), "paragraph\n\n");
         Ok(())
     }
 }
