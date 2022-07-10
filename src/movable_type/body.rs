@@ -17,7 +17,7 @@ impl Body {
 
     pub fn dump(&self) -> String {
         let children: Vec<String> = self.0.children.iter().map(|node| dump_node(node)).collect();
-        children.join("\n")
+        children.join("")
     }
 }
 
@@ -39,6 +39,7 @@ fn dump_element(element: &Element) -> String {
                 .collect();
             format!("{}\n\n", children.join(""))
         }
+        "br" => "  ".to_string(),
         _ => todo!(),
     }
 }
@@ -115,6 +116,14 @@ BODY:
         let dom = Dom::parse("<p>paragraph</p>")?;
         let body = Body::new(dom);
         assert_eq!(body.dump(), "paragraph\n\n");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_br() -> Result<()> {
+        let dom = Dom::parse("Hello<br/>")?;
+        let body = Body::new(dom);
+        assert_eq!(body.dump(), "Hello  ");
         Ok(())
     }
 }
