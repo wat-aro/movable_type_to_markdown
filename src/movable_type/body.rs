@@ -30,7 +30,7 @@ fn dump_node(node: &Node) -> String {
     match node {
         Node::Text(text) => text.to_string(),
         Node::Element(_) => todo!(),
-        Node::Comment(_) => todo!(),
+        Node::Comment(_) => String::from(""),
     }
 }
 
@@ -90,6 +90,14 @@ BODY:
         let dom = Dom::parse("Hello")?;
         let body = Body::new(dom);
         assert_eq!(body.dump(), "Hello");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_comment() -> Result<()> {
+        let dom = Dom::parse("<!-- comment -->")?;
+        let body = Body::new(dom);
+        assert_eq!(body.dump(), "");
         Ok(())
     }
 }
