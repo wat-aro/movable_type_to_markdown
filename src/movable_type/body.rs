@@ -1,4 +1,4 @@
-use html_parser::Dom;
+use html_parser::{Dom, Node};
 use nom::{
     bytes::complete::{tag, take_until},
     character::complete::newline,
@@ -13,6 +13,24 @@ pub struct Body(Dom);
 impl Body {
     pub fn new(dom: Dom) -> Self {
         Self(dom)
+    }
+
+    pub fn dump(&self) -> String {
+        let children: Vec<String> = self
+            .0
+            .children
+            .iter()
+            .map(|child| dump_node(child))
+            .collect();
+        children.join("\n")
+    }
+}
+
+fn dump_node(node: &Node) -> String {
+    match node {
+        Node::Text(text) => text.to_string(),
+        Node::Element(_) => todo!(),
+        Node::Comment(_) => todo!(),
     }
 }
 
@@ -64,6 +82,14 @@ BODY:
         let (input, _) = body(text)?;
         let (_, _) = comments(input)?;
 
+        Ok(())
+    }
+
+    #[test]
+    fn dump_text() -> Result<()> {
+        let dom = Dom::parse("Hello")?;
+        let body = Body::new(dom);
+        assert_eq!(body.dump(), "Hello");
         Ok(())
     }
 }
