@@ -16,7 +16,7 @@ use self::{
 #[derive(Debug, PartialEq)]
 pub struct Post<'a> {
     pub metadata: Metadata<'a>,
-    pub body: Body<'a>,
+    pub body: Body,
     pub comments: Vec<Comment<'a>>,
 }
 
@@ -60,6 +60,7 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use chrono::{TimeZone, Utc};
+    use html_parser::Dom;
 
     #[test]
     fn parse_post() -> Result<()> {
@@ -85,6 +86,7 @@ DATE: 02/28/2019 04:17:42
 --------
 "#,
         )?;
+        let dom = Dom::parse("<p>test</p>\n")?;
         assert_eq!(
             post,
             (
@@ -101,7 +103,7 @@ DATE: 02/28/2019 04:17:42
                         category: vec![],
                         date: Utc.ymd(2018, 8, 7).and_hms(20, 31, 14)
                     },
-                    body: Body("<p>test</p>\n"),
+                    body: Body::new(dom),
                     comments: vec![Comment {
                         author: "anonymous",
                         ip: IP::new(192, 168, 1, 1),

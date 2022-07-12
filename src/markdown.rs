@@ -7,7 +7,7 @@ pub struct Markdown<'a> {
     title: &'a str,
     published: DateTime<Utc>,
     tags: Vec<&'a str>,
-    body: &'a str,
+    body: String,
 }
 
 impl<'a> From<Post<'a>> for Markdown<'a> {
@@ -15,7 +15,7 @@ impl<'a> From<Post<'a>> for Markdown<'a> {
         let title = post.metadata.title;
         let published = post.metadata.date;
         let tags = post.metadata.category;
-        let body = post.body.0;
+        let body = post.body.dump();
 
         Markdown {
             title,

@@ -1,19 +1,119 @@
+use html_parser::{Dom, Element, Node};
 use nom::{
     bytes::complete::{tag, take_until},
     character::complete::newline,
-    combinator::map,
+    combinator::map_res,
     sequence::{pair, preceded},
     IResult,
 };
 
 #[derive(Debug, PartialEq)]
-pub struct Body<'a>(pub &'a str);
+pub struct Body(Dom);
+
+impl Body {
+    pub fn new(dom: Dom) -> Self {
+        Self(dom)
+    }
+
+    pub fn dump(&self) -> String {
+        let children: Vec<String> = self.0.children.iter().map(|node| dump_node(node)).collect();
+        children.join("")
+    }
+}
+
+fn dump_node(node: &Node) -> String {
+    match node {
+        Node::Text(text) => text.to_string(),
+        Node::Element(element) => dump_element(element),
+        Node::Comment(_) => String::from(""),
+    }
+}
+
+fn dump_element(element: &Element) -> String {
+    match &element.name[..] {
+        "p" => {
+            let children: Vec<String> = dump_children(&element.children);
+            format!("{}\n\n", children.join(""))
+        }
+        "br" => "  ".to_string(),
+        "a" => {
+            let text = dump_children(&element.children).join("");
+            if element.classes.contains(&String::from("keyword")) {
+                return text;
+            }
+            match element.attributes.get("href") {
+                Some(link) => {
+                    let link = match link {
+                        Some(link) => link,
+                        None => "",
+                    };
+                    format!("[{text}]({link})", text = text, link = link)
+                }
+                None => format!("[{text}]()", text = text),
+            }
+        }
+        "span" => dump_children(&element.children).join(""),
+        "img" => {
+            let mut attributes_text: Vec<String> = vec![];
+            if let Some(src) = element.attributes.get("src").unwrap_or(&None) {
+                attributes_text.push(format!("src=\"{}\"", src));
+            }
+            if let Some(height) = element.attributes.get("height").unwrap_or(&None) {
+                attributes_text.push(format!("height=\"{}\"", height));
+            }
+            if let Some(width) = element.attributes.get("width").unwrap_or(&None) {
+                attributes_text.push(format!("width=\"{}\"", width));
+            }
+            if let Some(loading) = element.attributes.get("loading").unwrap_or(&None) {
+                attributes_text.push(format!("loading=\"{}\"", loading));
+            }
+
+            format!("<img {}/>", attributes_text.join(" "))
+        }
+        "code" => {
+            let children = dump_children(&element.children);
+            format!("`{}`", children.join(""))
+        }
+        "pre" => {
+            println!("{:?}", element);
+
+            let code = match element.attributes.get("data-lang").unwrap_or(&None) {
+                Some(code) => code,
+                None => "",
+            };
+            let children: Vec<String> =
+                element.children.iter().map(|node| pre_node(node)).collect();
+            format!("```{}\n{}\n```\n", code, children.join(""))
+        }
+        _ => {
+            println!("{:?}", element);
+            todo!()
+        }
+    }
+}
+
+fn pre_node(node: &Node) -> String {
+    match node {
+        Node::Text(text) => text.to_string(),
+        Node::Element(element) => pre_element(element),
+        Node::Comment(_) => String::from(""),
+    }
+}
+
+fn pre_element(element: &Element) -> String {
+    let children: Vec<String> = element.children.iter().map(|node| pre_node(node)).collect();
+    children.join("")
+}
+
+fn dump_children(children: &Vec<Node>) -> Vec<String> {
+    children.iter().map(|node| dump_node(node)).collect()
+}
 
 pub fn body<'a>(input: &str) -> IResult<&str, Body> {
     let (input, _) = pair(tag("-----"), newline)(input)?;
-    let (input, body) = map(
+    let (input, body) = map_res(
         preceded(pair(tag("BODY:"), newline), take_until("\n-----\n")),
-        |str| Body(str),
+        |str| Dom::parse(str).map(|dom| Body(dom)),
     )(input)?;
     let (input, _) = newline(input)?;
     Ok((input, body))
@@ -25,6 +125,13 @@ mod tests {
 
     use super::*;
     use anyhow::Result;
+
+    impl Body {
+        fn initialize_from_html(html: &str) -> Self {
+            let dom = Dom::parse(html).unwrap();
+            Self(dom)
+        }
+    }
 
     #[test]
     fn parse_body() -> Result<()> {
@@ -57,6 +164,148 @@ BODY:
         let (input, _) = body(text)?;
         let (_, _) = comments(input)?;
 
+        Ok(())
+    }
+
+    #[test]
+    fn dump_text() -> Result<()> {
+        let body = Body::initialize_from_html("Hello");
+        assert_eq!(body.dump(), "Hello");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_comment() -> Result<()> {
+        let body = Body::initialize_from_html("<!-- comment -->");
+        assert_eq!(body.dump(), "");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_p() -> Result<()> {
+        let body = Body::initialize_from_html("<p>paragraph</p>");
+        assert_eq!(body.dump(), "paragraph\n\n");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_br() -> Result<()> {
+        let body = Body::initialize_from_html("Hello<br/>");
+        assert_eq!(body.dump(), "Hello  ");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_a() -> Result<()> {
+        let body = Body::initialize_from_html("<a href=\"http://example.com\">Link</a>");
+        assert_eq!(body.dump(), "[Link](http://example.com)");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_a_without_keyword() -> Result<()> {
+        let body =
+            Body::initialize_from_html("<a class=\"keyword\" href=\"http://example.com\">Link</a>");
+        assert_eq!(body.dump(), "Link");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_span() -> Result<()> {
+        let body = Body::initialize_from_html("<span>Text</span>");
+        assert_eq!(body.dump(), "Text");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_img() -> Result<()> {
+        let body = Body::initialize_from_html("<img src=\"http://example.log/image.png\" height=\"400\" width=\"300\" loading=\"lazy\" />");
+        assert_eq!(body.dump(), "<img src=\"http://example.log/image.png\" height=\"400\" width=\"300\" loading=\"lazy\"/>");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_code() -> Result<()> {
+        let body = Body::initialize_from_html("<code>Code</code>");
+        assert_eq!(body.dump(), "`Code`");
+        Ok(())
+    }
+
+    #[test]
+    fn dump_shell_pre() -> Result<()> {
+        let body = Body::initialize_from_html(
+            r#"<pre class="code shell" data-lang="shell" data-unlink>$ yay -G fcitx-mozc</pre>"#,
+        );
+        assert_eq!(
+            body.dump(),
+            r#"```shell
+$ yay -G fcitx-mozc
+```
+"#
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dump_ruby_pre() -> Result<()> {
+        let body = Body::initialize_from_html(
+            r#"<pre class="code lang-ruby" data-lang="ruby" data-unlink><span class="synPreProc">class</span> <span class="synType">MoneyType</span> &lt; <span class="synType">ActiveModel</span>::<span class="synType">Type</span>::<span class="synType">Integer</span>
+  <span class="synPreProc">def</span> <span class="synIdentifier">cast_value</span>(value)
+    <span class="synStatement">if</span> !value.kind_of?(<span class="synType">Numeric</span>) &amp;&amp; value.include?(<span class="synSpecial">'</span><span class="synConstant">$</span><span class="synSpecial">'</span>)
+      price_in_dollars = value.gsub(<span class="synSpecial">/\$/</span>, <span class="synSpecial">''</span>).to_f
+      <span class="synStatement">super</span>(price_in_dollars * <span class="synConstant">100</span>)
+    <span class="synStatement">else</span>
+      <span class="synStatement">super</span>
+    <span class="synStatement">end</span>
+  <span class="synPreProc">end</span>
+<span class="synPreProc">end</span>
+
+<span class="synComment"># config/initializers/types.rb</span>
+<span class="synType">ActiveModel</span>::<span class="synType">Type</span>.register(<span class="synConstant">:money</span>, <span class="synType">MoneyType</span>)
+
+<span class="synComment"># app/models/store_listing.rb</span>
+<span class="synPreProc">class</span> <span class="synType">StoreListing</span>
+  <span class="synPreProc">include</span> <span class="synType">ActiveModel</span>::<span class="synType">Model</span>
+  <span class="synPreProc">include</span> <span class="synType">ActiveModel</span>::<span class="synType">Attributes</span>
+
+  attribute <span class="synConstant">:price_in_cents</span>, <span class="synConstant">:money</span>
+<span class="synPreProc">end</span>
+
+store_listing = <span class="synType">StoreListing</span>.new(<span class="synConstant">price_in_cents</span>: <span class="synSpecial">'</span><span class="synConstant">$10.00</span><span class="synSpecial">'</span>)
+store_listing.price_in_cents <span class="synComment"># =&gt; 1000</span>
+</pre>
+"#,
+        );
+        assert_eq!(
+            body.dump(),
+            r#"```ruby
+class MoneyType < ActiveModel::Type::Integer
+  def cast_value(value)
+    if !value.kind_of?(Numeric) && value.include?('$')
+      price_in_dollars = value.gsub(/\$/, '').to_f
+      super(price_in_dollars * 100)
+    else
+      super
+    end
+  end
+end
+
+# config/initializers/types.rb
+ActiveModel::Type.register(:money, MoneyType)
+
+# app/models/store_listing.rb
+class StoreListing
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+
+  attribute :price_in_cents, :money
+end
+
+store_listing = StoreListing.new(price_in_cents: '$10.00')
+store_listing.price_in_cents # => 1000
+```
+"#
+        );
         Ok(())
     }
 }
